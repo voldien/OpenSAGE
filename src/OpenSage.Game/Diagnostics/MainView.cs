@@ -151,7 +151,7 @@ namespace OpenSage.Diagnostics
                         ImGui.EndMenu();
                     }
 
-                    if (ImGui.BeginMenu("Map: " + _map.Item1.Name))
+                    if (ImGui.BeginMenu("Map: " + _map.Item2))
                     {
                         foreach (var mapCache in _maps)
                         {
