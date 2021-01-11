@@ -44,7 +44,9 @@ namespace OpenSage.Graphics.Shaders
             }
 
             TriangleStripPipeline = AddDisposable(CreatePipeline(PrimitiveTopology.TriangleStrip));
+            TriangleListPipeline.Name = "TriangleStrip";
             TriangleListPipeline = AddDisposable(CreatePipeline(PrimitiveTopology.TriangleList));
+            TriangleListPipeline.Name = "TriangleList";
         }
     }
 }

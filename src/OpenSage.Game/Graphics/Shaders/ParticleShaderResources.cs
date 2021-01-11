@@ -51,7 +51,9 @@ namespace OpenSage.Graphics.Shaders
             }
 
             _alphaPipeline = AddDisposable(CreatePipeline(BlendStateDescription.SingleAlphaBlend));
+            _alphaPipeline.Name = "SingleAlphaBlend";
             _additivePipeline = AddDisposable(CreatePipeline(BlendStateDescriptionUtility.SingleAdditiveBlendNoAlpha));
+            _additivePipeline.Name = "SingleAdditiveBlendNoAlpha";
         }
 
         public Pipeline GetCachedPipeline(ParticleSystemShader shader)

@@ -50,6 +50,7 @@ namespace OpenSage.Graphics.Shaders
                     ShaderSet.Description,
                     resourceLayouts,
                     RenderPipeline.GameOutputDescription)));
+            Pipeline.Name = "Water";
         }
 
         [StructLayout(LayoutKind.Sequential)]

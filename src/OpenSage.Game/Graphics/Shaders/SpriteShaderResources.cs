@@ -71,6 +71,7 @@ namespace OpenSage.Graphics.Shaders
                         ShaderSet.Description,
                         _resourceLayouts,
                         outputDescription))));
+                result.Name = "Sprite";
             }
 
             return result;
