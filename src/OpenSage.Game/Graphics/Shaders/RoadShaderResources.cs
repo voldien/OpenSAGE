@@ -45,6 +45,7 @@ namespace OpenSage.Graphics.Shaders
                     ShaderSet.Description,
                     resourceLayouts,
                     RenderPipeline.GameOutputDescription)));
+            Pipeline.Name = "Road";
         }
 
         public ResourceSet CreateMaterialResourceSet(Texture texture)

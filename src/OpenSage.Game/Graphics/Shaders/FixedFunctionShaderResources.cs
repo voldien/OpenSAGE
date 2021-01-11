@@ -83,6 +83,7 @@ namespace OpenSage.Graphics.Shaders
                         ShaderSet.Description,
                         _resourceLayouts,
                         RenderPipeline.GameOutputDescription))));
+                result.Name = "Fixed Function";
             }
 
             return result;
