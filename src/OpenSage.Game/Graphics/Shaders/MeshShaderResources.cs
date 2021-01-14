@@ -43,8 +43,8 @@ namespace OpenSage.Graphics.Shaders
 
             RenderItemConstantsResourceLayout = AddDisposable(graphicsDevice.ResourceFactory.CreateResourceLayout(
                 new ResourceLayoutDescription(
-                    new ResourceLayoutElementDescription("RenderItemConstantsVS", ResourceKind.UniformBuffer, ShaderStages.Vertex),
-                    new ResourceLayoutElementDescription("RenderItemConstantsPS", ResourceKind.UniformBuffer, ShaderStages.Fragment))));
+                    new ResourceLayoutElementDescription("RenderItemConstantsVS", ResourceKind.UniformBuffer, ShaderStages.Vertex, ResourceLayoutElementOptions.DynamicBinding),
+                    new ResourceLayoutElementDescription("RenderItemConstantsPS", ResourceKind.UniformBuffer, ShaderStages.Fragment, ResourceLayoutElementOptions.DynamicBinding))));
         }
 
         public ResourceSet GetCachedMeshResourceSet(bool isSkinned, bool hasHouseColor)

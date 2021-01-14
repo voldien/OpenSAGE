@@ -9,11 +9,14 @@ namespace OpenSage.Graphics
 
         public T Value;
 
-        public unsafe ConstantBuffer(GraphicsDevice graphicsDevice, string name = null)
-        {
+        public unsafe uint ElementSize {get { return (uint)sizeof(T); } }
+
+        public unsafe ConstantBuffer(GraphicsDevice graphicsDevice, string name = null) : this(graphicsDevice, 1, name) { }
+
+        public unsafe ConstantBuffer(GraphicsDevice graphicsDevice, uint count, string name){
             Buffer = AddDisposable(graphicsDevice.ResourceFactory.CreateBuffer(
                 new BufferDescription(
-                    (uint) sizeof(T),
+                    count * (uint)sizeof(T),
                     BufferUsage.UniformBuffer | BufferUsage.Dynamic)));
 
             if (name != null)
