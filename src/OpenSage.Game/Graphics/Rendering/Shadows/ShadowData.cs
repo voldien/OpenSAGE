@@ -54,6 +54,7 @@ namespace OpenSage.Graphics.Rendering.Shadows
                     numCascades,
                     ShadowMapPixelFormat,
                     TextureUsage.DepthStencil | TextureUsage.Sampled)));
+            ShadowMap.Name = "ShadowMap";
 
             ShadowMapFramebuffers = new Framebuffer[numCascades];
             for (var i = 0u; i < numCascades; i++)
