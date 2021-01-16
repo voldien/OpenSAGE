@@ -53,7 +53,7 @@ struct RenderItemConstantsPSType
     \
     layout(set = 7, binding = 0) uniform RenderItemConstantsVS \
     { \
-        RenderItemConstantsVSType _RenderItemConstantsVS; \
+        RenderItemConstantsVSType _RenderItemConstantsVS[1]; \
     }; \
     \
     layout(set = 8, binding = 0) readonly buffer SkinningBuffer \
@@ -76,7 +76,7 @@ struct RenderItemConstantsPSType
     \
     layout(set = 7, binding = 1) uniform RenderItemConstantsPS \
     { \
-        RenderItemConstantsPSType _RenderItemConstantsPS; \
+        RenderItemConstantsPSType _RenderItemConstantsPS[1]; \
     };
 
 #define MESH_MATERIAL_RESOURCE_SET 5

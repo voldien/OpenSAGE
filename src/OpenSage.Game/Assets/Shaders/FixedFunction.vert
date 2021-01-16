@@ -15,6 +15,7 @@ layout(location = 2) out vec2 out_UV0;
 layout(location = 3) out vec2 out_UV1;
 layout(location = 4) out vec2 out_CloudUV;
 layout(location = 5) out float out_ViewSpaceDepth;
+layout(location = 6) flat out int InstanceID;
 
 void main()
 {
@@ -43,7 +44,7 @@ void main()
         out_WorldPosition,
         out_WorldNormal,
         out_CloudUV,
-        _RenderItemConstantsVS.World,
+        _RenderItemConstantsVS[gl_InstanceIndex].World,
         _GlobalConstantsVS.ViewProjection,
         _GlobalLightingConstantsVS.CloudShadowMatrix,
         _GlobalConstantsShared.TimeInSeconds);
@@ -54,4 +55,5 @@ void main()
     out_UV1 = in_UV1;
 
     out_ViewSpaceDepth = gl_Position.z;
+    InstanceID =  gl_InstanceIndex;
 }

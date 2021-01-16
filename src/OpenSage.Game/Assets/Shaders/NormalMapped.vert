@@ -43,7 +43,7 @@ void main()
         out_WorldPosition,
         out_WorldNormal,
         out_CloudUV,
-        _RenderItemConstantsVS.World,
+        _RenderItemConstantsVS[gl_InstanceIndex].World,
         _GlobalConstantsVS.ViewProjection,
         _GlobalLightingConstantsVS.CloudShadowMatrix,
         _GlobalConstantsShared.TimeInSeconds);
@@ -52,6 +52,6 @@ void main()
 
     out_UV0 = in_UV0;
 
-    out_WorldTangent = TransformNormal(in_Tangent, _RenderItemConstantsVS.World);
-    out_WorldBinormal = TransformNormal(in_Binormal, _RenderItemConstantsVS.World);
+    out_WorldTangent = TransformNormal(in_Tangent, _RenderItemConstantsVS[gl_InstanceIndex].World);
+    out_WorldBinormal = TransformNormal(in_Binormal, _RenderItemConstantsVS[gl_InstanceIndex].World);
 }

@@ -105,6 +105,7 @@ layout(location = 2) in vec2 in_UV0;
 layout(location = 3) in vec2 in_UV1;
 layout(location = 4) in vec2 in_CloudUV;
 layout(location = 5) in float in_ViewSpaceDepth;
+layout(location = 6) flat in int InstanceID;
 
 in vec4 gl_FragCoord;
 
@@ -243,8 +244,8 @@ void main()
     vec3 materialDiffuseColor = _MaterialConstants.Material.Diffuse;
     if (_MeshConstants.HasHouseColor)
     {
-        materialAmbientColor = _RenderItemConstantsPS.HouseColor;
-        materialDiffuseColor = _RenderItemConstantsPS.HouseColor;
+        materialAmbientColor = _RenderItemConstantsPS[InstanceID].HouseColor;
+        materialDiffuseColor = _RenderItemConstantsPS[InstanceID].HouseColor;
     }
 
     vec3 diffuseColor;
@@ -376,6 +377,6 @@ void main()
         in_CloudUV);
 
     out_Color = vec4(
-        objectColor * cloudColor * _RenderItemConstantsPS.TintColor,
-        _MaterialConstants.Material.Opacity * diffuseTextureColor.w * _RenderItemConstantsPS.Opacity);
+        objectColor * cloudColor * _RenderItemConstantsPS[InstanceID].TintColor,
+        _MaterialConstants.Material.Opacity * diffuseTextureColor.w * _RenderItemConstantsPS[InstanceID].Opacity);
 }

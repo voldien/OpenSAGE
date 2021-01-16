@@ -41,7 +41,7 @@ void main()
         out_WorldPosition,
         out_WorldNormal,
         out_CloudUV,
-        _RenderItemConstantsVS.World,
+        _RenderItemConstantsVS[gl_InstanceIndex].World,
         _GlobalConstantsVS.ViewProjection,
         _GlobalLightingConstantsVS.CloudShadowMatrix,
         _GlobalConstantsShared.TimeInSeconds);
