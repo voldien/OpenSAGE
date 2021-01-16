@@ -60,6 +60,9 @@ namespace OpenSage.Graphics.Rendering
         public int RenderedObjectsOpaque { get; private set; }
         public int RenderedObjectsTransparent { get; private set; }
 
+        public uint VSAlignmentSize {get; set;}
+        public uint PSAlignmentSize {get; set;}
+
         public RenderPipeline(Game game)
         {
             _renderList = new RenderList();
@@ -74,9 +77,14 @@ namespace OpenSage.Graphics.Rendering
             uint nub = 0;
             unsafe {
                 uint bufferSize = 65536; //TODO get physical limit from graphic device. (Default use 16KB)
-                uint nVS = bufferSize / (uint)sizeof(MeshShaderResources.RenderItemConstantsVS);
-                uint nPS = bufferSize / (uint)sizeof(MeshShaderResources.RenderItemConstantsPS);
+                uint nVSOffset = (uint)sizeof(MeshShaderResources.RenderItemConstantsVS) + ((uint)sizeof(MeshShaderResources.RenderItemConstantsVS) % graphicsDevice.UniformBufferMinOffsetAlignment);
+                uint nFSOffset = (uint)sizeof(MeshShaderResources.RenderItemConstantsPS) + ((uint)sizeof(MeshShaderResources.RenderItemConstantsVS) % graphicsDevice.UniformBufferMinOffsetAlignment);
+                uint nVS = bufferSize / nVSOffset;
+                uint nPS = bufferSize / nFSOffset;
                 nub = Math.Min(nVS, nPS);
+
+                VSAlignmentSize = nVSOffset;
+                PSAlignmentSize = nFSOffset;
             }
 
             _renderItemConstantsBufferPS = new ConstantBuffer<MeshShaderResources.RenderItemConstantsPS>[3];
@@ -89,8 +97,8 @@ namespace OpenSage.Graphics.Rendering
             _renderItemConstantsResourceSet[x] = AddDisposable(graphicsDevice.ResourceFactory.CreateResourceSet(
                 new ResourceSetDescription(
                     game.GraphicsLoadContext.ShaderResources.Mesh.RenderItemConstantsResourceLayout,
-                    new DeviceBufferRange(_renderItemConstantsBufferVS[x].Buffer, 0, _renderItemConstantsBufferVS[x].ElementSize * nub),
-                    new DeviceBufferRange(_renderItemConstantsBufferPS[x].Buffer, 0, _renderItemConstantsBufferPS[x].ElementSize * nub))));
+                    new DeviceBufferRange(_renderItemConstantsBufferVS[x].Buffer, 0, VSAlignmentSize * nub),
+                    new DeviceBufferRange(_renderItemConstantsBufferPS[x].Buffer, 0, PSAlignmentSize * nub))));
             }
 
             _cacheMatrix = new Matrix4x4[nub];
@@ -423,9 +431,9 @@ namespace OpenSage.Graphics.Rendering
                             ref var renderItemLookup = ref bucket.RenderItems[renderItemIndex];
                             if (renderItemLookup.ShaderSet.GlobalResourceSetIndices.RenderItemConstants != null)
                             {
-                                Marshal.StructureToPtr<Matrix4x4>(renderItemLookup.World, vsmap.Data + 64 * (int) x, false);
+                                Marshal.StructureToPtr<Matrix4x4>(renderItemLookup.World, vsmap.Data + (int)VSAlignmentSize * (int) x, false);
                                 if (renderItemLookup.RenderItemConstantsPS != null)
-                                    Marshal.StructureToPtr<MeshShaderResources.RenderItemConstantsPS>(renderItemLookup.RenderItemConstantsPS.Value, fsmap.Data + 32 * (int) x, false);
+                                    Marshal.StructureToPtr<MeshShaderResources.RenderItemConstantsPS>(renderItemLookup.RenderItemConstantsPS.Value, fsmap.Data + (int)PSAlignmentSize * (int) x, false);
                             }
                         }
                         else
@@ -467,8 +475,8 @@ namespace OpenSage.Graphics.Rendering
                 if (renderItem.ShaderSet.GlobalResourceSetIndices.RenderItemConstants != null)
                 {
 
-                    uint vsbuffreoffset = _renderItemConstantsBufferVS[bufferIndex].ElementSize * (uint) (nthRender % RenderItemBathSize);
-                    uint fsbuffreoffset = _renderItemConstantsBufferPS[bufferIndex].ElementSize * (uint) (nthRender % RenderItemBathSize);
+                    uint vsbuffreoffset = VSAlignmentSize * (uint) (nthRender % RenderItemBathSize);
+                    uint fsbuffreoffset = PSAlignmentSize * (uint) (nthRender % RenderItemBathSize);
                     commandList.SetGraphicsResourceSet(renderItem.ShaderSet.GlobalResourceSetIndices.RenderItemConstants.Value, _renderItemConstantsResourceSet[bufferIndex],
                         new uint[2] { vsbuffreoffset, fsbuffreoffset });
                 }
