@@ -20,7 +20,7 @@ namespace OpenSage.Graphics.Rendering
         public readonly uint IndexCount;
         public readonly DeviceBuffer IndexBuffer;
 
-        public readonly int Key;
+        public readonly long Key;
 
         public RenderItem(
             string debugName,
@@ -49,10 +49,12 @@ namespace OpenSage.Graphics.Rendering
             Key = 0;
 
             // Bit 24-31: ShaderSet
-            Key |= (shaderSet.Id << 24);
+            Key |= (long)(shaderSet.Id << 24);
 
             // Bit 8-23: Pipeline
-            Key |= (pipeline.GetHashCode()) << 8;
+            Key |= (long)(pipeline.GetHashCode()) << 8;
+
+            Key |= (long)(indexBuffer.GetHashCode() << 32);
         }
 
         int IComparable<RenderItem>.CompareTo(RenderItem other)
