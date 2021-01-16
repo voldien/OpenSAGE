@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using OpenSage.Content;
 using OpenSage.Data.Map;
 using OpenSage.Graphics.Rendering.Shadows;
@@ -33,11 +34,12 @@ namespace OpenSage.Graphics.Rendering
         private readonly GlobalShaderResources _globalShaderResources;
         private readonly GlobalShaderResourceData _globalShaderResourceData;
 
-        private readonly ConstantBuffer<MeshShaderResources.RenderItemConstantsVS> _renderItemConstantsBufferVS;
-        private readonly ConstantBuffer<MeshShaderResources.RenderItemConstantsPS> _renderItemConstantsBufferPS;
+        private readonly ConstantBuffer<MeshShaderResources.RenderItemConstantsVS>[] _renderItemConstantsBufferVS;
+        private readonly ConstantBuffer<MeshShaderResources.RenderItemConstantsPS>[] _renderItemConstantsBufferPS;
+        private uint bufferIndex = 0;
         private Matrix4x4[] _cacheMatrix;
         private MeshShaderResources.RenderItemConstantsPS[] _cachePS;
-        private readonly ResourceSet _renderItemConstantsResourceSet;
+        private readonly ResourceSet[] _renderItemConstantsResourceSet;
 
         private readonly DrawingContext2D _drawingContext;
 
@@ -70,24 +72,29 @@ namespace OpenSage.Graphics.Rendering
 
             uint nub = 0;
             unsafe {
-                uint bufferSize = 16384; //TODO get physical limit from graphic device. (Default use 16KB)
+                uint bufferSize = 65536; //TODO get physical limit from graphic device. (Default use 16KB)
                 uint nVS = bufferSize / (uint)sizeof(MeshShaderResources.RenderItemConstantsVS);
                 uint nPS = bufferSize / (uint)sizeof(MeshShaderResources.RenderItemConstantsPS);
                 nub = Math.Min(nVS, nPS);
             }
 
-            _renderItemConstantsBufferVS = AddDisposable(new ConstantBuffer<MeshShaderResources.RenderItemConstantsVS>(graphicsDevice, nub, "RenderItemConstantsVS"));
-            _renderItemConstantsBufferPS = AddDisposable(new ConstantBuffer<MeshShaderResources.RenderItemConstantsPS>(graphicsDevice, nub,"RenderItemConstantsPS"));
+            _renderItemConstantsBufferPS = new ConstantBuffer<MeshShaderResources.RenderItemConstantsPS>[3];
+            _renderItemConstantsBufferVS = new ConstantBuffer<MeshShaderResources.RenderItemConstantsVS>[3];
+            _renderItemConstantsResourceSet = new ResourceSet[3];
+            for(int x = 0; x < _renderItemConstantsBufferPS.Length; x++){
+                _renderItemConstantsBufferVS[x] = AddDisposable(new ConstantBuffer<MeshShaderResources.RenderItemConstantsVS>(graphicsDevice, nub, "RenderItemConstantsVS"));
+                _renderItemConstantsBufferPS[x] = AddDisposable(new ConstantBuffer<MeshShaderResources.RenderItemConstantsPS>(graphicsDevice, nub,"RenderItemConstantsPS"));
+
+            _renderItemConstantsResourceSet[x] = AddDisposable(graphicsDevice.ResourceFactory.CreateResourceSet(
+                new ResourceSetDescription(
+                    game.GraphicsLoadContext.ShaderResources.Mesh.RenderItemConstantsResourceLayout,
+                    new DeviceBufferRange(_renderItemConstantsBufferVS[x].Buffer, 0, _renderItemConstantsBufferVS[x].ElementSize * nub),
+                    new DeviceBufferRange(_renderItemConstantsBufferPS[x].Buffer, 0, _renderItemConstantsBufferPS[x].ElementSize * nub))));
+            }
 
             _cacheMatrix = new Matrix4x4[nub];
             _cachePS = new MeshShaderResources.RenderItemConstantsPS[nub];
 
-
-            _renderItemConstantsResourceSet = AddDisposable(graphicsDevice.ResourceFactory.CreateResourceSet(
-                new ResourceSetDescription(
-                    game.GraphicsLoadContext.ShaderResources.Mesh.RenderItemConstantsResourceLayout,
-                    new DeviceBufferRange(_renderItemConstantsBufferVS.Buffer, 0, _renderItemConstantsBufferVS.ElementSize),
-                    new DeviceBufferRange(_renderItemConstantsBufferPS.Buffer, 0, _renderItemConstantsBufferPS.ElementSize))));
 
 
             _commandList = AddDisposable(graphicsDevice.ResourceFactory.CreateCommandList());
@@ -381,12 +388,14 @@ namespace OpenSage.Graphics.Rendering
 
             int? lastRenderItemIndex = null;
             uint nthRender = 0;
+            uint instanceCount = 0;
 
-            foreach (var i in bucket.RenderItems.CulledItemIndices)
+            //foreach (var i in bucket.RenderItems.CulledItemIndices)
+            for(int j = 0; j < bucket.RenderItems.CulledItemIndices.Count; j += (int)instanceCount)
             {
+                instanceCount = 1;
+                var i = bucket.RenderItems.CulledItemIndices[j];
                 ref var renderItem = ref bucket.RenderItems[i];
-
-                commandList.PushDebugGroup($"Render item: {renderItem.DebugName}");
 
                 if (lastRenderItemIndex == null || bucket.RenderItems[lastRenderItemIndex.Value].Pipeline != renderItem.Pipeline)
                 {
@@ -399,6 +408,11 @@ namespace OpenSage.Graphics.Rendering
                 if (nthRender % RenderItemBathSize == 0)
                 {
                     commandList.InsertDebugMarker("Setup VS/PS-Constant Buffer Batch");
+
+                    bufferIndex = (bufferIndex + 1) % (uint) _renderItemConstantsBufferPS.Length;
+                    MappedResource vsmap = _loadContext.GraphicsDevice.Map(_renderItemConstantsBufferVS[bufferIndex].Buffer, MapMode.Write);
+                    MappedResource fsmap = _loadContext.GraphicsDevice.Map(_renderItemConstantsBufferPS[bufferIndex].Buffer, MapMode.Write);
+
                     for (uint x = 0; x < RenderItemBathSize; x++)
                     {
                         uint batch_offset = x + nthRender;
@@ -408,9 +422,9 @@ namespace OpenSage.Graphics.Rendering
                             ref var renderItemLookup = ref bucket.RenderItems[renderItemIndex];
                             if (renderItemLookup.ShaderSet.GlobalResourceSetIndices.RenderItemConstants != null)
                             {
-                                _cacheMatrix[x] = renderItemLookup.World;
+                                Marshal.StructureToPtr<Matrix4x4>(renderItemLookup.World, vsmap.Data + 64 * (int) x, false);
                                 if (renderItemLookup.RenderItemConstantsPS != null)
-                                    _cachePS[x] = renderItemLookup.RenderItemConstantsPS.Value;
+                                    Marshal.StructureToPtr<MeshShaderResources.RenderItemConstantsPS>(renderItemLookup.RenderItemConstantsPS.Value, fsmap.Data + 32 * (int) x, false);
                             }
                         }
                         else
@@ -418,26 +432,60 @@ namespace OpenSage.Graphics.Rendering
                     }
 
                     /*  Update buffer.  */
-                    _commandList.UpdateBuffer(_renderItemConstantsBufferVS.Buffer, 0, _cacheMatrix);
-                    _commandList.UpdateBuffer(_renderItemConstantsBufferPS.Buffer, 0, _cachePS);
+                    _loadContext.GraphicsDevice.Unmap(_renderItemConstantsBufferVS[bufferIndex].Buffer);
+                    _loadContext.GraphicsDevice.Unmap(_renderItemConstantsBufferPS[bufferIndex].Buffer);
+                    
+                }
+
+
+                if (renderItem.ShaderSet.GlobalResourceSetIndices.RenderItemConstants != null)
+                {
+                    /*  Fill with number instance of the remaning matrix buffer.    */
+                    for (uint x = (uint) 1; x < j % RenderItemBathSize; x++)
+                    {
+                        uint batch_offset = x + (uint)j;
+                        if (batch_offset < bucket.RenderItems.CulledItemIndices.Count)
+                        {
+                            var renderItemIndex = bucket.RenderItems.CulledItemIndices[(int) batch_offset];
+
+                            ref var renderItemLookup = ref bucket.RenderItems[renderItemIndex];
+
+                            if (renderItem.IndexBuffer == renderItemLookup.IndexBuffer &&
+                                renderItem.IndexCount == renderItemLookup.IndexCount
+                                && renderItem.Key == renderItemLookup.Key)
+                            {
+                                instanceCount++;
+                                continue;
+                            }
+                            else
+                                break;
+                        }
+                    }
                 }
 
                 if (renderItem.ShaderSet.GlobalResourceSetIndices.RenderItemConstants != null)
                 {
-                    commandList.SetGraphicsResourceSet(renderItem.ShaderSet.GlobalResourceSetIndices.RenderItemConstants.Value, _renderItemConstantsResourceSet,
-                        new uint[2]{_renderItemConstantsBufferVS.ElementSize * (uint)(nthRender % RenderItemBathSize), _renderItemConstantsBufferPS.ElementSize * (uint)(nthRender % RenderItemBathSize)});
+
+                    uint vsbuffreoffset = _renderItemConstantsBufferVS[bufferIndex].ElementSize * (uint) (nthRender % RenderItemBathSize);
+                    uint fsbuffreoffset = _renderItemConstantsBufferPS[bufferIndex].ElementSize * (uint) (nthRender % RenderItemBathSize);
+                    commandList.SetGraphicsResourceSet(renderItem.ShaderSet.GlobalResourceSetIndices.RenderItemConstants.Value, _renderItemConstantsResourceSet[bufferIndex],
+                        new uint[2] { vsbuffreoffset, fsbuffreoffset });
                 }
 
                 if (bucket.RenderItemName == "Water")
                 {
                     CalculateWaterShaderMap(context.Scene3D, context, commandList, renderItem, cloudResourceSet);
                 }
+
+                Debug.Assert(instanceCount >= 1);
+
+                commandList.PushDebugGroup($"Render item: {renderItem.DebugName} ({instanceCount})");
                 renderItem.BeforeRenderCallback.Invoke(commandList, context);
 
                 commandList.SetIndexBuffer(renderItem.IndexBuffer, IndexFormat.UInt16);
                 commandList.DrawIndexed(
                     renderItem.IndexCount,
-                    1,
+                    instanceCount,
                     renderItem.StartIndex,
                     0,
                     0);
@@ -445,8 +493,12 @@ namespace OpenSage.Graphics.Rendering
                 lastRenderItemIndex = i;
 
                 commandList.PopDebugGroup();
-                nthRender++;
+
+                /*  */
+                nthRender += instanceCount;
+                //j += (int)(instanceCount);
             }
+            Debug.Assert(nthRender == bucket.RenderItems.CulledItemIndices.Count);
 
             return bucket.RenderItems.CulledItemIndices.Count;
         }
@@ -484,7 +536,7 @@ namespace OpenSage.Graphics.Rendering
 
             if (indices.RenderItemConstants != null)
             {
-                commandList.SetGraphicsResourceSet(indices.RenderItemConstants.Value, _renderItemConstantsResourceSet, new uint[]{0,0});
+                commandList.SetGraphicsResourceSet(indices.RenderItemConstants.Value, _renderItemConstantsResourceSet[bufferIndex], new uint[]{0,0});
             }
         }
     }
