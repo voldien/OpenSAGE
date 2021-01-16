@@ -10,7 +10,7 @@ MAKE_MESH_CONSTANTS_RESOURCES(1)
 
 layout(set = 2, binding = 0) uniform RenderItemConstantsVS
 {
-    RenderItemConstantsVSType _RenderItemConstantsVS;
+    RenderItemConstantsVSType _RenderItemConstantsVS[1];
 };
 
 layout(set = 3, binding = 0) readonly buffer SkinningBuffer
@@ -45,7 +45,7 @@ void main()
         modifiedPosition,
         gl_Position,
         worldPosition,
-        _RenderItemConstantsVS.World,
+        _RenderItemConstantsVS[gl_InstanceIndex].World,
         _GlobalConstantsVS.ViewProjection);
 
     DO_CLIPPING(worldPosition)
