@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using System.Collections.Generic;
 using Xunit;
 
@@ -24,12 +25,12 @@ namespace OpenSage.Tests.Data
             }
             if (differentIndices.Count > 0)
             {
-                var message = string.Empty;
+                var message = new StringBuilder();
                 foreach (var index in differentIndices)
                 {
-                    message += $"Different values at index {index}. Expected: {array1[index]}. Actual: {array2[index]}.{Environment.NewLine}";
+                    message.AppendFormat($"Different values at index {index}. Expected: {array1[index]}. Actual: {array2[index]}.{Environment.NewLine}");
                 }
-                throw new Exception(message);
+                throw new Exception(message.ToString());
             }
         }
     }

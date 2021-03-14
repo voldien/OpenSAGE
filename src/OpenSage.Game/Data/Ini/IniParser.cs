@@ -63,7 +63,7 @@ namespace OpenSage.Data.Ini
                 // https://github.com/OpenSAGE/OpenSAGE/issues/405
                 var localeSpecificFileName = Path.ChangeExtension(entry.FilePath, null) + "9x.ini";
                 var localeSpecificEntry = entry.FileSystem.GetFile(localeSpecificFileName);
-                if(localeSpecificEntry != null) 
+                if(localeSpecificEntry != null)
                 {
                     entry = localeSpecificEntry;
                     iniEncoding = localeSpecificEncoding;
@@ -335,7 +335,7 @@ namespace OpenSage.Data.Ini
 
         private static string GetFloatText(in IniToken token)
         {
-            var floatText = string.Empty;
+            var floatText = new StringBuilder(token.Text.Length);
             var seenDot = false;
             foreach (var c in token.Text)
             {
@@ -354,9 +354,9 @@ namespace OpenSage.Data.Ini
                         seenDot = true;
                     }
                 }
-                floatText += c;
+                floatText.Append(c);
             }
-            return floatText;
+            return floatText.ToString();
         }
 
         public bool IsFloat(in IniToken token)
