@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
@@ -111,16 +112,18 @@ namespace OpenSage.Mathematics
         {
             get
             {
-                var result = string.Empty;
+                var resultBuilder = new StringBuilder();
 
                 foreach (var bit in GetSetBits())
                 {
-                    result += bit.ToString() + ", ";
+                    resultBuilder.Append(bit.ToString());
+                    resultBuilder.Append(", ");
                 }
 
-                return (result == string.Empty)
+                var resultString = resultBuilder.ToString();
+                return (resultString == string.Empty)
                     ? "(None)"
-                    : result.Trim(' ', ',');
+                    : resultString.Trim(' ', ',');
             }
         }
 
